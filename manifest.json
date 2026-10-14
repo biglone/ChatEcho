@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "ChatEcho — ChatGPT 自动朗读",
+  "version": "0.1.0",
+  "description": "使用浏览器本地语音朗读 ChatGPT 网页的新回复。",
+  "permissions": ["storage", "activeTab"],
+  "host_permissions": ["https://chatgpt.com/*", "https://chat.openai.com/*"],
+  "action": {
+    "default_title": "ChatEcho 朗读控制",
+    "default_popup": "popup.html"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://chatgpt.com/*", "https://chat.openai.com/*"],
+      "js": ["src/cleaner.js", "src/reply-tracker.js", "src/content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
