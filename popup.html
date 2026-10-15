@@ -9,18 +9,22 @@
 <body>
   <main>
     <header><span class="logo">◖</span><div><h1>ChatEcho</h1><p>ChatGPT 网页朗读</p></div></header>
-    <label class="toggle-row"><span><strong>自动朗读</strong><small>朗读 ChatGPT 新回复</small></span><input id="enabled" type="checkbox"><i></i></label>
+    <label class="toggle-row"><span><strong>自动朗读</strong><small>开启后读取回复文本并用系统语音朗读</small></span><input id="enabled" type="checkbox"><i></i></label>
+    <p class="privacy-note">回复内容仅在本机处理，不会上传。关闭此开关即可停止自动读取和朗读。</p>
     <p id="notice" class="notice" hidden>请在 ChatGPT 网页中打开插件控制。</p>
     <section class="controls">
       <p class="section-title">播放控制 <span id="status">未连接</span></p>
+      <p id="tts-error" class="tts-error" role="status" hidden></p>
       <div class="buttons"><button id="pause">暂停</button><button id="resume">继续</button><button id="stop" class="quiet">停止</button></div>
       <button id="replay" class="replay">重播最新回复</button>
+      <button id="test-voice" class="replay">测试语音（不依赖回复识别）</button>
     </section>
     <section class="settings">
       <label for="voice">语音</label><select id="voice"><option value="">自动选择中文语音</option></select>
       <label for="rate">语速 <output id="rateValue">1.0×</output></label><input id="rate" type="range" min="0.5" max="2" step="0.1" value="1">
+      <label for="pitch">音调 <output id="pitchValue">1.00</output></label><input id="pitch" type="range" min="0.8" max="1.2" step="0.05" value="1">
     </section>
-    <footer>使用系统语音引擎 · 不调用 API</footer>
+    <footer>使用 Chrome 本地语音 · 不需要 AI API</footer>
   </main>
   <script src="popup.js"></script>
 </body>

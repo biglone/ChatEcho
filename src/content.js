@@ -2,22 +2,37 @@
   if (window.__chatEchoLoaded) return;
   window.__chatEchoLoaded = true;
 
-  const DEFAULTS = { enabled: false, rate: 1, voiceURI: "" };
+  const DEFAULTS = { enabled: false, rate: 1, pitch: 1, voiceName: "" };
   const STABILITY_MS = 1100;
-  const MAX_CHUNK_LENGTH = 1800;
   let settings = { ...DEFAULTS };
-  let utterances = [];
-  let state = "idle";
 
   const assistantSelector = '[data-message-author-role="assistant"]';
 
   function getTurns() {
     const specific = [...document.querySelectorAll(assistantSelector)];
     if (specific.length) return specific;
-    return [...document.querySelectorAll("article")].filter((article) => {
-      const label = `${article.getAttribute("data-testid") || ""} ${article.innerText || ""}`;
-      return /assistant|ChatGPT/i.test(label.slice(0, 120));
-    });
+
+    // ChatGPT has changed the outer message markup over time. Prefer message
+    // containers that still expose an assistant role somewhere below them.
+    const conversationTurns = [...document.querySelectorAll('[data-testid^="conversation-turn-"], article')];
+    const roleMarked = conversationTurns.filter((turn) =>
+      turn.getAttribute("data-message-author-role") === "assistant"
+      || turn.querySelector('[data-message-author-role="assistant"]')
+    );
+    if (roleMarked.length) return roleMarked;
+
+    // Current layouts commonly keep assistant answer bodies as `.markdown`
+    // even when the role attribute is only present on a wrapper we cannot see.
+    const markdown = [...document.querySelectorAll([
+      "main .markdown", "[role=main] .markdown", "[data-testid^=conversation-turn-] .markdown",
+      "main [class*=MarkdownRoot]", "[class*=MarkdownRoot]",
+      "main [class*=prose]", "[role=main] [class*=prose]",
+      "main [class*=assistant]", "[role=main] [class*=assistant]"
+    ].join(", "))]
+      .filter((node) => !node.querySelector(".markdown"));
+    if (markdown.length) return markdown;
+
+    return [];
   }
 
   function cloneReadableContent(turn) {
@@ -29,56 +44,15 @@
     return clone.innerText || clone.textContent || "";
   }
 
-  function splitText(text, maxLength = MAX_CHUNK_LENGTH) {
-    const chunks = [];
-    let rest = text.trim();
-    while (rest.length > maxLength) {
-      let cut = rest.lastIndexOf("\n", maxLength);
-      if (cut < maxLength * 0.55) cut = rest.lastIndexOf("。", maxLength);
-      if (cut < maxLength * 0.55) cut = rest.lastIndexOf("，", maxLength);
-      if (cut < maxLength * 0.55) cut = maxLength;
-      chunks.push(rest.slice(0, cut + 1).trim());
-      rest = rest.slice(cut + 1).trim();
-    }
-    if (rest) chunks.push(rest);
-    return chunks;
-  }
-
-  function findSelectedVoice() {
-    const voices = speechSynthesis.getVoices();
-    return voices.find((voice) => voice.voiceURI === settings.voiceURI)
-      || voices.find((voice) => /^zh/i.test(voice.lang))
-      || null;
-  }
-
-  function announceState() {
-    chrome.runtime.sendMessage({ type: "CHAT_ECHO_STATE", state }).catch(() => {});
-  }
-
-  function speakText(rawText) {
+  function speakText(rawText, { force = false } = {}) {
     const text = ChatEchoCleaner.cleanForSpeech(rawText);
-    if (!text || !settings.enabled) return;
-    speechSynthesis.cancel();
-    utterances = splitText(text).map((chunk) => {
-      const utterance = new SpeechSynthesisUtterance(chunk);
-      utterance.rate = Math.min(2, Math.max(0.5, Number(settings.rate) || 1));
-      const voice = findSelectedVoice();
-      if (voice) {
-        utterance.voice = voice;
-        utterance.lang = voice.lang;
-      } else {
-        utterance.lang = "zh-CN";
-      }
-      return utterance;
-    });
-    utterances.forEach((utterance, index) => {
-      utterance.onstart = () => { state = "speaking"; announceState(); };
-      utterance.onend = () => {
-        if (index === utterances.length - 1) { state = "idle"; announceState(); }
-      };
-      utterance.onerror = () => { state = "idle"; announceState(); };
-      speechSynthesis.speak(utterance);
-    });
+    if (!text) return Promise.resolve({ state: "error", error: "没有提取到可朗读的文本。" });
+    if (!force && !settings.enabled) return Promise.resolve({ state: "idle", error: "自动朗读尚未开启。" });
+    return chrome.runtime.sendMessage({
+      type: "CHAT_ECHO_TTS_SPEAK",
+      text,
+      settings: { rate: settings.rate, pitch: settings.pitch, voiceName: settings.voiceName }
+    }).catch((error) => ({ state: "error", error: error?.message || "无法连接语音引擎。" }));
   }
 
   function isGenerating() {
@@ -107,29 +81,59 @@
     }
   });
 
-  function replayLatest() {
+  async function replayLatest() {
     const latest = getTurns().at(-1);
-    if (latest) speakText(cloneReadableContent(latest));
+    if (!latest) {
+      const turns = document.querySelectorAll('[data-testid^="conversation-turn-"], article').length;
+      const counts = {
+        main: document.querySelectorAll("main").length,
+        roleMain: document.querySelectorAll('[role="main"]').length,
+        testid: document.querySelectorAll("[data-testid]").length,
+        messageTestid: document.querySelectorAll('[data-testid*="message"], [data-testid*="conversation"]').length,
+        markdown: document.querySelectorAll(".markdown").length,
+        prose: document.querySelectorAll('[class*=prose]').length,
+        paragraphs: document.querySelectorAll("main p, [role=main] p").length,
+        bodyText: (document.body?.innerText || "").length
+      };
+      const structure = [...document.querySelectorAll("main p, [role=main] p")].slice(-3).map((paragraph) => {
+        const path = [];
+        let node = paragraph;
+        for (let depth = 0; node && depth < 4; depth += 1, node = node.parentElement) {
+          const tag = (node.tagName || "?").toLowerCase();
+          const classes = typeof node.className === "string" ? node.className.trim().split(/\s+/).slice(0, 3).join(".") : "";
+          const testid = node.getAttribute?.("data-testid");
+          const role = node.getAttribute?.("data-message-author-role") || node.getAttribute?.("role");
+          path.push(`${tag}${classes ? `.${classes}` : ""}${testid ? `[testid=${testid}]` : ""}${role ? `[role=${role}]` : ""}`);
+        }
+        return path.join(" ← ");
+      }).join(" | ");
+      return {
+        ok: false,
+        error: `未识别到回复节点（对话块${turns}、main${counts.main}、role-main${counts.roleMain}、testid${counts.testid}、消息标记${counts.messageTestid}、markdown${counts.markdown}、prose${counts.prose}、段落${counts.paragraphs}、页面文字${counts.bodyText}字）。结构：${structure || "未找到段落"}`
+      };
+    }
+    const text = cloneReadableContent(latest).trim();
+    if (!text) return { ok: false, error: "找到了最新消息，但没有提取到可朗读文字。" };
+    const result = await speakText(text, { force: true });
+    return { ok: result?.state !== "error", chars: text.length, state: result?.state, error: result?.error || "" };
   }
 
   chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     if (message.type === "CHAT_ECHO_COMMAND") {
-      if (message.command === "pause") { speechSynthesis.pause(); state = "paused"; }
-      if (message.command === "resume") { speechSynthesis.resume(); state = "speaking"; }
-      if (message.command === "stop") { speechSynthesis.cancel(); state = "idle"; }
-      if (message.command === "replay") replayLatest();
-      announceState();
-      sendResponse({ ok: true, state });
+      if (message.command === "replay") {
+        replayLatest().then(sendResponse).catch((error) => sendResponse({ ok: false, error: error?.message || "重播失败。" }));
+        return true;
+      } else {
+        chrome.runtime.sendMessage({ type: "CHAT_ECHO_TTS_COMMAND", command: message.command })
+          .then(sendResponse)
+          .catch((error) => sendResponse({ ok: false, error: error.message }));
+      }
       return true;
     }
     if (message.type === "CHAT_ECHO_SETTINGS") {
       settings = { ...settings, ...message.settings };
-      if (!settings.enabled) { speechSynthesis.cancel(); state = "idle"; announceState(); }
+      if (!settings.enabled) chrome.runtime.sendMessage({ type: "CHAT_ECHO_TTS_COMMAND", command: "stop" }).catch(() => {});
       sendResponse({ ok: true });
-      return true;
-    }
-    if (message.type === "CHAT_ECHO_GET_STATE") {
-      sendResponse({ state, enabled: settings.enabled });
       return true;
     }
   });
@@ -138,7 +142,7 @@
   chrome.storage.onChanged.addListener((changes, area) => {
     if (area !== "local") return;
     for (const [key, change] of Object.entries(changes)) settings[key] = change.newValue;
-    if (!settings.enabled) { speechSynthesis.cancel(); state = "idle"; }
+    if (!settings.enabled) chrome.runtime.sendMessage({ type: "CHAT_ECHO_TTS_COMMAND", command: "stop" }).catch(() => {});
   });
 
   const observer = new MutationObserver(inspectLatestTurn);

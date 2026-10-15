@@ -6,11 +6,14 @@ header { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
 h1 { margin: 0; font-size: 17px; } header p { margin: 1px 0 0; color: #737987; }
 .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 12px; border: 1px solid #e5e7ed; border-radius: 12px; background: white; cursor: pointer; }
 .toggle-row span { display: grid; gap: 2px; } .toggle-row small { color: #7a8090; }
+.privacy-note { margin: 8px 3px 0; color: #687080; font-size: 11px; line-height: 1.45; }
 input[type=checkbox] { position: absolute; opacity: 0; } .toggle-row i { width: 38px; height: 22px; border-radius: 20px; background: #cbd0da; position: relative; transition: .15s; }
 .toggle-row i:after { content: ""; position: absolute; left: 3px; top: 3px; width: 16px; height: 16px; background: white; border-radius: 50%; transition: .15s; }
 .toggle-row input:checked + i { background: #5c68e8; } .toggle-row input:checked + i:after { transform: translateX(16px); }
 .controls, .settings { margin-top: 14px; padding: 12px; border: 1px solid #e5e7ed; border-radius: 12px; background: white; }
 .section-title { display: flex; justify-content: space-between; margin: 0 0 10px; font-weight: 650; } #status { font-size: 11px; font-weight: 400; color: #7a8090; }
+#status.error { color: #b42318; }
+.tts-error { margin: 0 0 9px; padding: 8px; border-radius: 8px; color: #8f241c; background: #fff1ef; font-size: 11px; line-height: 1.45; overflow-wrap: anywhere; }
 .buttons { display: flex; gap: 7px; } button { flex: 1; min-height: 32px; border: 0; border-radius: 8px; color: white; background: #5c68e8; cursor: pointer; } button.quiet, .replay { color: #424857; background: #eef0f5; }
 .replay { width: 100%; margin-top: 7px; }
 .settings { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 10px; } .settings label { color: #535968; } select { max-width: 190px; padding: 6px; border: 1px solid #dfe2e9; border-radius: 7px; background: white; } output { color: #6c7180; } input[type=range] { grid-column: 1 / -1; width: 100%; accent-color: #5c68e8; }

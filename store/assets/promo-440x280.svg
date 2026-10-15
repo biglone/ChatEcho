@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="440" height="280" viewBox="0 0 440 280">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#4654d8"/><stop offset="1" stop-color="#7585ff"/></linearGradient>
+    <linearGradient id="card" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#fff"/><stop offset="1" stop-color="#f5f6ff"/></linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="180%"><feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="#242b75" flood-opacity=".24"/></filter>
+  </defs>
+  <rect width="440" height="280" fill="url(#bg)"/>
+  <circle cx="390" cy="30" r="100" fill="#aeb8ff" opacity=".17"/>
+  <circle cx="40" cy="260" r="90" fill="#b8c0ff" opacity=".14"/>
+  <g filter="url(#shadow)">
+    <rect x="40" y="52" width="217" height="154" rx="16" fill="url(#card)"/>
+    <rect x="40" y="52" width="217" height="24" rx="16" fill="#eceeff"/>
+    <circle cx="58" cy="64" r="3" fill="#ff7f8a"/><circle cx="69" cy="64" r="3" fill="#ffcb58"/><circle cx="80" cy="64" r="3" fill="#5bc995"/>
+    <rect x="58" y="92" width="150" height="9" rx="4.5" fill="#d9dcef"/>
+    <rect x="58" y="109" width="178" height="7" rx="3.5" fill="#e5e7f0"/>
+    <rect x="58" y="123" width="165" height="7" rx="3.5" fill="#e5e7f0"/>
+    <rect x="58" y="137" width="112" height="7" rx="3.5" fill="#e5e7f0"/>
+    <rect x="58" y="164" width="99" height="26" rx="13" fill="#eff0ff"/>
+    <path d="M72 177h2v-6h-2zm5 0h2v-10h-2zm5 0h2v-14h-2zm5 0h2v-7h-2zm5 0h2v-11h-2z" fill="#5967e8"/>
+  </g>
+  <g filter="url(#shadow)">
+    <rect x="235" y="92" width="166" height="148" rx="20" fill="#fff"/>
+    <rect x="253" y="110" width="34" height="34" rx="11" fill="#5967e8"/>
+    <path d="M260 124c0-2 1.6-3.6 3.6-3.6h9.5c2 0 3.6 1.6 3.6 3.6v5.4c0 2-1.6 3.6-3.6 3.6h-4.7l-5 4v-4c-2 0-3.6-1.6-3.6-3.6z" fill="#fff"/>
+    <path d="M279 123c2 1.4 3 3.1 3 5.2s-1 3.8-3 5.2" fill="none" stroke="#dce0ff" stroke-width="2.5" stroke-linecap="round"/>
+    <text x="296" y="125" font-family="Arial,sans-serif" font-size="15" font-weight="700" fill="#20242d">ChatEcho</text>
+    <text x="296" y="140" font-family="Arial,sans-serif" font-size="10" fill="#777e90">ChatGPT TTS</text>
+    <rect x="253" y="158" width="130" height="35" rx="10" fill="#f5f6fa"/>
+    <text x="265" y="180" font-family="Arial,sans-serif" font-size="9" font-weight="600" fill="#3b4050">Voice · Speed · Replay</text>
+    <path d="M266 215c3-7 6-7 9 0s6 7 9 0 6-7 9 0 6 7 9 0 6-7 9 0 6 7 9 0 6-7 9 0 6 7 9 0 6-7 9 0" fill="none" stroke="#5967e8" stroke-width="3" stroke-linecap="round"/>
+  </g>
+</svg>
